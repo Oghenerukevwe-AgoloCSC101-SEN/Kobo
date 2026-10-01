@@ -64,8 +64,8 @@ impl Scanner {
             }
 
             // Single-character tokens
-            '(' => self.add(TokenType::LParen),
-            ')' => self.add(TokenType::RParen),
+            '(' => self.add(TokenType::),
+            ')' => self.add(TokenType::),
             '{' => self.add(TokenType::LBrace),
             '}' => self.add(TokenType::RBrace),
             ',' => self.add(TokenType::Comma),
