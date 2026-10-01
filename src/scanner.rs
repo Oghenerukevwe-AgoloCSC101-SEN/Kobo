@@ -25,24 +25,108 @@ struct Scanner {
 }
 
 impl Scanner {
-    fn run(&mut self) {
-        // TODO(you): drive the scan: read one token at a time until the source runs out, then
-        //            add the EOF token. Spec 6.1 says which line EOF carries.
-        todo!("run")
+
+        fn run(&mut self) {
+        while !self.at_end() {
+            self.start = self.current;
+            self.scan_token();
+        }
+
+        
+        let eof_line = self.tokens.last().map(|t| t.line).unwrap_or(1);
+
+        self.tokens.push(Token {
+            kind: TokenType::Eof,
+            lexeme: String::new(),
+            line: eof_line,
+        });
     }
+        
+    
 
     fn scan_token(&mut self) {
-        // TODO(you): recognise one token. Spec 1.2 lists every token type, 1.1 covers
-        //            whitespace and comments, and an unrecognised character is 'Character is
-        //            not part of any token.' (5.1).
-        todo!("scan_token")
+        let c = self.advance();
+
+        match c {
+            // Whitespace
+            ' ' | '\r' | '\t' => {}
+            '\n' => self.line += 1,
+
+            // Comments or Slash
+            '/' => {
+                if self.matches('/') {
+                    while self.peek() != '\n' && !self.at_end() {
+                        self.advance();
+                    }
+                } else {
+                    self.add(TokenType::Slash);
+                }
+            }
+
+            // Single-character tokens
+            '(' => self.add(TokenType::LParen),
+            ')' => self.add(TokenType::RParen),
+            '{' => self.add(TokenType::LBrace),
+            '}' => self.add(TokenType::RBrace),
+            ',' => self.add(TokenType::Comma),
+            ';' => self.add(TokenType::Semicolon),
+            '+' => self.add(TokenType::Plus),
+            '-' => self.add(TokenType::Minus),
+            '*' => self.add(TokenType::Star),
+
+            // 1 or 2 character comparison operators
+            '!' => {
+                let tok = if self.matches('=') { TokenType::BangEqual } else { TokenType::Bang };
+                self.add(tok);
+            }
+            '=' => {
+                let tok = if self.matches('=') { TokenType::EqualEqual } else { TokenType::Equal };
+                self.add(tok);
+            }
+            '<' => {
+                let tok = if self.matches('=') { TokenType::LessEqual } else { TokenType::Less };
+                self.add(tok);
+            }
+            '>' => {
+                let tok = if self.matches('=') { TokenType::GreaterEqual } else { TokenType::Greater };
+                self.add(tok);
+            }
+
+            // Literals and identifiers
+            '"' => self.string(),
+            '0'..='9' => self.number(),
+            'a'..='z' | 'A'..='Z' | '_' => self.identifier(),
+
+            // Unrecognized character
+            _ => self.error(self.line, "Character is not part of any token."),
+        }
     }
+        
+    
 
     fn string(&mut self) {
-        // TODO(you): scan a string literal. A string may span lines (1.5); an unterminated one
-        //            is reported at the line it opened on (5.1).
-        todo!("string")
+        let start_line = self.line;
+
+        while self.peek() != '"' && !self.at_end() {
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+            self.advance();
+        }
+
+        if self.at_end() {
+            
+            self.error(start_line, "String is never closed.");
+            return;
+        }
+
+        
+        self.advance();
+        self.add(TokenType::Str); 
     }
+        
+        
+    
 
     fn number(&mut self) {
         // TODO(you): scan a number literal: digits, then a fractional part only when a digit
