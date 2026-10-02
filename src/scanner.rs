@@ -129,16 +129,39 @@ impl Scanner {
     
 
     fn number(&mut self) {
-        // TODO(you): scan a number literal: digits, then a fractional part only when a digit
-        //            follows the dot (1.4).
-        todo!("number")
+        while self.peek().is_ascii_digit() {
+            self.advance();
+        }
+
+        
+        if self.peek() == '.' && self.peek_next().is_ascii_digit() {
+            self.advance(); // consume '.'
+
+            while self.peek().is_ascii_digit() {
+                self.advance();
+            }
+        }
+
+        self.add(TokenType::Number);
     }
+        
+    
 
     fn identifier(&mut self) {
-        // TODO(you): scan an identifier, then decide whether it is a keyword; keyword() in
-        //            token.rs does the lookup (1.2, 1.3).
-        todo!("identifier")
+        while self.peek().is_alphanumeric() || self.peek() == '_' {
+            self.advance();
+        }
+
+        let text: String = self.src[self.start..self.current].iter().collect();
+
+        let kind = match keyword(&text) {
+            Some(kw) => kw,
+            None => TokenType::Identifier,
+        };
+
+        self.add(kind);
     }
+        
 
     // --- primitives ---------------------------------------------------------------
 
